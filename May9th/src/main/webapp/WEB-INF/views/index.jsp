@@ -40,7 +40,7 @@
 				$("#chkCapsLock").css("display","block");
 			    return;
 			  }
-			  else
+			  else 
 			  {
 			  	$("#chkCapsLock").css("display","none");
 			  	return;
