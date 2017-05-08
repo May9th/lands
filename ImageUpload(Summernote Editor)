@@ -1,0 +1,146 @@
+**Summernote Image Upload**
+
+**JAVA SCRIPT**
+$('#summernote').summernote({
+  height: 400,
+  lang: 'ko-KR',
+  callbacks:{
+    onImageUpload: function(files, editor, welEditable){
+      for(var intIndex = 0; intIndex < files.length; intIndex++)
+      {
+        sendFile(files[intIndex], editor, welEditable);
+      }
+    },
+    /* onMediaDelete: function(target){
+      deleteImage(target[0].src);
+    } */
+  }
+});
+    
+    
+function sendFile(file, editor, welEditable){
+		var fdFile = new FormData();
+		
+		var strBbsId = "<%=intBbsId%>";
+		var strUserId = "${userId}";
+		var strMaxFileSize = "<%=clsSetting.getMaxFileSize()%>"
+		
+		fdFile.append("uploadFile", file);
+		$.ajax({
+			data : fdFile,
+			type : "POST",
+			dataType : "JSON",
+			url : "/config/baseinfo/bbs/insertEditorImages.do?bbsId=" + strBbsId + "&userId=" + strUserId + "&maxFileSize=" + strMaxFileSize,
+			cache : false,
+			contentType : false,
+			enctype: "multipart/form-data",		
+			processData : false,
+			success : function(objResponse) {
+				if(objResponse.result == -1)
+				{
+					strMaxFileSize = doComma(strMaxFileSize);
+					var intUploadedFileSize = objResponse.fileSize * 1;
+					intUploadedFileSize /= 1048576;
+					alert("이미지 파일은 "+ strMaxFileSize +"MB 까지 업로드 가능합니다. (업로드된 파일 크기: " + intUploadedFileSize + " MB)")
+					return false;
+				}
+				else
+				{
+					$("#summernote").summernote('insertImage', objResponse.fileUrl, objResponse.fileName);
+				}
+			}
+		});
+	}
+  
+**/JAVA SCRIPT**
+
+
+
+**JAVA**
+/**
+     * 에디터에서 글 작성 및 수정시, 본문에 들어가는 이미지를 업로드 하면 이미지를 삽입 시켜준다.
+     * @param file 업로드하는 파일
+     * @return 업로드 성공된 file
+     * @throws Exception
+     */
+    @RequestMapping(value="/config/baseinfo/bbs/insertEditorImages.do")
+    public @ResponseBody ResponseEntity<Object> intsertEditorImages( HttpSession httpSession,
+    																 @RequestParam(value = "uploadFile", required = true) MultipartFile mfUploadFile,
+    																 @RequestParam(value = "bbsId", required = true) String strBbsId,
+    																 @RequestParam(value = "userId", required = true) String strUserId,
+    																 @RequestParam(value = "maxFileSize", defaultValue = "5") long lngMaxFileSize) throws Exception
+    {
+    	Map<String, Object> mpParam = new HashMap<String, Object>();
+    	
+    	String strOriginalName = mfUploadFile.getOriginalFilename(); //파일 원본명
+    	String originalNameExtension = strOriginalName.substring(strOriginalName.lastIndexOf(".") + 1).toLowerCase(); //파일 확장자명
+    	//strOriginalName = new String(strOriginalName.getBytes("iso-8859-1"), "utf-8");
+    	//strOriginalName = new String(strOriginalName.getBytes("8859_1"), "EUC-KR");
+    	
+    	mStatLogger.debug(" -bbsId: "+ strBbsId);
+    	mStatLogger.debug(" -userId: " + strUserId);
+    	
+    	if(mfUploadFile != null && !(mfUploadFile.getOriginalFilename().equals("")))
+    	{
+    		
+	    	// 파일크기제한 (5MB)
+	        long lngFileSize = mfUploadFile.getSize();
+	        lngMaxFileSize *= 1024 * 1024; // 최소 단위 MB로 변환
+	        if(lngMaxFileSize < lngFileSize)
+	        {
+	        	mStatLogger.debug(" -lngLimitFileSize: " + lngMaxFileSize);
+	        	
+	        	mpParam.put("fileSize", lngMaxFileSize);
+	            mpParam.put("result", -1); //파일용량이 5MB를 초과하면 -1을 리턴값으로 설정해 준다. jsp에서 경고창을 띄워줌
+	            return new ResponseEntity<Object>(mpParam, HttpStatus.CREATED);
+	        }
+	        
+	        Date curDate = new Date();
+	        SimpleDateFormat sdfMills = new SimpleDateFormat("yyyyMMdd HH:mm:ss.SSS");
+	        
+	        String strCurDateTime = sdfMills.format(curDate);
+	        
+	        String strCurDate = strCurDateTime.split(" ")[0]; //년 월 일
+	        String[] arrCurTime = strCurDateTime.split(" ")[1].split(":"); // 시 분
+	        
+	        //파일 경로
+	        String strUploadFilePath = mPsProperties.getString("eagon.upload.editor.path") + "/" + //기본 파일 경로
+	        						   strCurDate 		 + "/" + //년월일
+	        						   arrCurTime[0] 	 + "/" + //시
+	        						   strUserId;							//등록자 ID
+	        
+	        //저장되어질 파일 명
+	        String[] arrCurSec = arrCurTime[2].split("\\."); //밀리초 가져오기
+	        String strCurSec = arrCurSec[0]; //초
+	        String strCurMilSec = arrCurSec[1]; //밀리 초
+	        String strUploadFileName = strCurDate + arrCurTime[0] + arrCurTime[1] + strCurSec + strCurMilSec + "." + originalNameExtension;
+
+	        //파일 경로 폴더 생성
+	        //server.xml에 아래의 Context 설정 <host></host> 사이
+//	 **********<Context docBase="C:/Service/Data/EagonData/upload" path="/upload" reloadable="true"/>************
+	  
+	        File flDir = new File(strUploadFilePath);
+	        if(flDir.exists() == false) flDir.mkdirs();
+	        
+	        String strFileUrl = strUploadFilePath + "/" + strUploadFileName;
+	        
+	        //파일을 서버에 저장
+	        mfUploadFile.transferTo(new File(strFileUrl));
+	       
+	        //strUploadFilePath에는 글로벌 path가 있기떄문에 처음 경로를 재 설정하고 마지막에는 업로드 되는 파일 이름을 넣어준다.
+	        strFileUrl = mPsProperties.getString("eagon.upload.editor.url") + "/" +  
+	        			 strCurDate 	 + "/" + 
+	        			 arrCurTime[0] 	 + "/" + 
+	        			 strUserId + "/" + 
+					     strUploadFileName;
+	        
+	        mStatLogger.debug(" -컨텐츠 이미지 URL: " + strFileUrl);
+	        mStatLogger.debug(" -컨텐츠 이미지 원본명: " + strOriginalName);
+	        
+	        mpParam.put("fileUrl", strFileUrl);
+	        mpParam.put("fileName", strOriginalName);
+	        mpParam.put("result", 1);
+    	}
+    	return new ResponseEntity<Object>(mpParam, HttpStatus.CREATED);
+    }
+  **/JAVA**
