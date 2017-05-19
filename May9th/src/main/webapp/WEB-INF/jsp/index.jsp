@@ -1,21 +1,12 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<!DOCTYPE html>
+<%@ include file="/WEB-INF/jsp/include/header.jsp"%>
 
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>May 9th</title>
-  <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
-  <link rel="stylesheet" href="/resources/css/style.css">
-  <link rel="stylesheet" href="/resources/css/login.css">
-
-
+<body>
 	<script type="text/javascript">
-		function doChangePage(e){
-			var strMenuId = e.getAttribute("id");
+		function doChangePage(strId){
+			var strMenuId = strId.getAttribute("id");
 			//각 메뉴마다 요청이 다름..
-			document.location.href="/may9th/main/contact/"+strMenuId+".do";
+			document.location.href="/may9th/"+strMenuId+"/mainView.do";
 		}
 		
 // 		$('input').focusin(function() {
@@ -26,7 +17,7 @@
 		
 		function submitUserData(){
 			var form = document.formLogin;
-			form.action = "main/signIn.do";
+			form.action = "/main/signIn.do";
 			form.submit();
 		}
 		
@@ -56,16 +47,12 @@
 		});
 		
 	</script>
-  
-</head>
-
-<body background = "/resources/img/background.jpg">
 	<div class="overlay-navigation">
 		<nav role="navigation">
 			<ul>
 				<li><a id="home"     onclick="doChangePage(this);" data-content="The beginning">홈</a></li>
 				<li><a id="about"    onclick="doChangePage(this);" data-content="Curious?">About</a></li>
-				<li><a id="skills"   onclick="doChangePage(this);" data-content="I got game">Skills</a></li>
+				<li><a id="bbs"   onclick="doChangePage(this);" data-content="I got game">게시판</a></li>
 				<li><a id="Projects" onclick="doChangePage(this);" data-content="Only the finest">Projects</a></li>
 				<li><a id="contact"  onclick="doChangePage(this);" data-content="Don't hesitate">Contact</a></li>
 			</ul>	
@@ -87,7 +74,11 @@
 				<div class="login" onclick="submitUserData();">
 					<span>sign in</span>
 				</div>
-				
+				<div align="center" style="margin-top:10px;">
+					Join LandS! <a href="#">Sign up</a> and enjoy!
+					<br/>
+					<a href="#">forgot ID or Password?</a>
+				</div>
 			</div>
 		</form>
 		<div class="open-overlay" style="display:block;">
@@ -95,8 +86,22 @@
 			<span class="bar-middle"></span>
 			<span class="bar-bottom"></span>
 		</div>
+		<div>
+			
+		</div>
 	</section>
-
+<!-- <section class="login">
+	<div class="titulo">Sign In</div>
+	<form action="#" method="post" enctype="application/x-www-form-urlencoded">
+    	<input id="userId" type="text" required title="Username required" placeholder="Username" data-icon="U">
+        <input id="userPw" type="password" required title="Password required" placeholder="Password" data-icon="x">
+        <div class="olvido">
+        	<div class="col"><a href="#" title="Ver Carásteres">Register</a></div>
+            <div class="col"><a href="#" title="Recuperar Password">Fotgot Password?</a></div>
+        </div>
+        <a href="#" class="enviar" onclick="submitUserData();">Submit</a>
+    </form>
+</section> -->
 
 
 
@@ -106,4 +111,4 @@
 <script src="/resources/js/index.js"></script>
 
 </body>
-</html>
+<%@ include file="/WEB-INF/jsp/include/footer.jsp"%>
